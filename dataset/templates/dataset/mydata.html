@@ -1,0 +1,43 @@
+{% extends 'dataset/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">My Datasets</h2>
+    <form method="get" class="d-flex gap-2 mb-3">
+        <input type="text" name="q" class="form-control" placeholder="Cari dataset..." value="{{ query|default:'' }}">
+        <input type="date" name="start_date" class="form-control" value="{{ start_date|default:'' }}">
+        <input type="date" name="end_date" class="form-control" value="{{ end_date|default:'' }}">
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>      
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Nama Dataset</th>
+                <th>Deskripsi</th>
+                <th>Nama File</th>
+                <th>Tanggal Upload</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in datasets %}
+            <tr>
+                <td>{{ data.name }}</td>
+                <td>{{ data.description|truncatechars:50 }}</td>
+                <td>{{ data.data_file.name|cut:"files/" }}</td>
+                <td>{{ data.uploaded_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                    <a href="{% url 'dataset_detail' data.id %}" class="btn btn-sm btn-info">View</a>
+                    <a href="{% url 'edit_dataset_step1' data.id %}" class="btn btn-sm btn-warning">Edit</a>
+                    <a href="{% url 'delete_dataset' data.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus dataset ini?')">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">Belum ada dataset yang Anda unggah.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

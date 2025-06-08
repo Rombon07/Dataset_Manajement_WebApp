@@ -1,0 +1,25 @@
+{% extends 'accounts/base.html' %}
+{% block title %}Register page{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-image"></div>
+    <div class="auth-form">
+        <div class="auth-box">
+            <h4 class="mb-3 text-center">Register</h4>
+            <form method="POST">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <div class="mb-3">
+                    <label class="form-label">Ketik ulang kode berikut: <strong>{{ code }}</strong></label>
+                    <input type="text" name="input_code" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-success w-100">Register</button>
+            </form>
+            <div class="mt-3 text-center">
+                <a href="{% url 'login' %}">Already have an account? Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

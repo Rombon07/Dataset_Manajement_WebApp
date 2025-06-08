@@ -1,0 +1,11 @@
+{% extends 'accounts/base.html' %}
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+<div class="container text-center mt-5">
+    <h1>Welcome to DatasetApp</h1>
+    <p class="lead">Simpan, kelola, dan visualisasikan dataset Anda dengan mudah dan efisien.</p>
+    <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+    <a href="{% url 'register' %}" class="btn btn-outline-secondary">Register</a>
+</div>
+{% endblock %}

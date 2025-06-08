@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Dataset Summary</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+        h2 { color: #4B0082; }
+        .section { margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 11px; }
+        .logs { font-size: 10px; }
+        img.chart {
+            display: block;
+            margin: 10px auto;
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h2>{{ dataset.name }}</h2>
+    <p>{{ dataset.description }}</p>
+
+    {% if preview %}
+    <div class="section">
+        <h4>Preview Data</h4>
+        {{ preview|safe }}
+    </div>
+    {% endif %}
+
+    {% if chart_base64 %}
+    <div class="section">
+        <h4>Visualisasi Data (Bar Chart)</h4>
+        <img src="{{ chart_base64 }}" alt="Grafik Bar Chart" class="chart" />
+    </div>
+    {% endif %}
+
+    {% if boxplot_base64 %}
+        <img src="{{ boxplot_base64 }}" class="img-fluid my-3" />
+    {% endif %}
+
+    <!-- {% if logs %}
+    <div class="section">
+        <h4>Interaksi Pengguna</h4>
+        <ul class="logs">
+            {% for log in logs %}
+            <li>{{ log.user.username }} - {{ log.action|title }} - {{ log.timestamp }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %} -->
+</body>
+</html>

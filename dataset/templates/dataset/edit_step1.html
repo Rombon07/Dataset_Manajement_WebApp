@@ -1,0 +1,24 @@
+{% extends 'dataset/base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4 text-center">Edit Dataset - Langkah 1</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="id_name" class="form-label fw-semibold">Nama Dataset</label>
+            {{ form.name|add_class:"form-control" }}
+        </div>
+
+        <div class="mb-4">
+            <label for="id_description" class="form-label fw-semibold">Deskripsi</label>
+            {{ form.description|add_class:"form-control" }}
+        </div>
+
+        <div class="d-grid">
+            <button type="submit" class="btn btn-primary btn-lg rounded-pill">Lanjut ke Langkah 2</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

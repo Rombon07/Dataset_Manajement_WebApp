@@ -1,0 +1,38 @@
+{% extends "dataset/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Dashboard Dataset</h2>
+        <form method="get" class="row g-2 mb-4">
+            <div class="col-md-4">
+            <input type="text" name="q" class="form-control" placeholder="Cari dataset..." value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+            <input type="date" name="start_date" class="form-control" value="{{ request.GET.start_date }}">
+            </div>
+            <div class="col-md-3">
+            <input type="date" name="end_date" class="form-control" value="{{ request.GET.end_date }}">
+            </div>
+            <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+        </form>
+    <div class="row">
+        {% for dataset in datasets %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <a href="{% url 'dataset_detail' dataset.pk %}" style="text-decoration: none; color: inherit;">
+                    <img src="{{ dataset.cover_image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ dataset.name }}</h5>
+                        <p class="card-text text-muted">by {{ dataset.owner.username }}</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <p>Belum ada dataset yang tersedia.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
