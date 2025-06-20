@@ -107,7 +107,7 @@
                     <a class="nav-link {% if request.resolver_match.url_name == 'mydata' %}active{% endif %}" href="{% url 'mydata' %}">My Data</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Help</a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'request_list' %}active{% endif %}" href="{% url 'request_list' %}">Request List</a>
                 </li>
             </ul>
         </div>

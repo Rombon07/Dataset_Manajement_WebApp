@@ -1,0 +1,89 @@
+{% extends 'dataset/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3 class="mb-4 text-center fw-bold">Daftar Permintaan Dataset</h3>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle shadow-sm rounded">
+            <thead class="table-primary text-center">
+                <tr>
+                    <th>No</th>
+                    <th>Nama Model</th>
+                    <th>Kebutuhan</th>
+                    <th>Nama Dataset</th>
+                    <th>Deskripsi Dataset</th>
+                    <th>Status</th>
+                    <th>File Dataset</th>
+                    <th>Status Pilihan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dataset in datasets %}
+                <tr>
+                    <td class="text-center">{{ forloop.counter }}</td>
+                    <td>{{ dataset.nama_model }}</td>
+                    <td>{{ dataset.kebutuhan }}</td>
+                    <td>
+                        {% if dataset.dataset %}
+                            {{ dataset.dataset.name }}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if dataset.dataset %}
+                            {{ dataset.dataset.description|truncatechars:50 }}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if dataset.dataset %}
+                            {{ dataset.dataset.status|default:"-" }}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if dataset.dataset and dataset.dataset.data_file %}
+                            <a href="{{ dataset.dataset.data_file.url }}" target="_blank" class="btn btn-sm btn-primary">📥 Lihat File</a>
+                        {% else %}
+                            <span class="text-muted">Tidak ada file</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if dataset.dataset %}
+                            <span class="badge bg-success">Sudah Dipilih</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Belum</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <div class="d-flex flex-column gap-2">
+                            <a href="{% url 'pilih_dataset_untuk_request' request_id=dataset.id %}" 
+                                class="btn btn-sm btn-outline-primary">
+                                🎯 Pilih Dataset
+                            </a>
+
+                            {% if dataset.dataset %}
+                            <form method="post" action="{% url 'api_kirim_dataset_ke_teman' dataset_id=dataset.dataset.id request_id=dataset.id %}">
+                                <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Kirim dataset ini ke teman?');">
+                                    📤 Kirim ke Teman
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted">Belum ada permintaan dataset.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

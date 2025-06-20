@@ -11,15 +11,20 @@
             <label class="form-label fw-semibold" for="id_name">Nama Dataset</label>
             {{ form.name|add_class:"form-control" }}
         </div>
-
+    
         <div class="mb-3">
             <label class="form-label fw-semibold" for="id_description">Deskripsi Dataset</label>
             {{ form.description|add_class:"form-control" }}
         </div>
-
+    
+        <div class="mb-3">
+            <label class="form-label fw-semibold" for="id_status">Status Dataset</label>
+            {{ form.status|add_class:"form-select" }}
+        </div>
+    
         <div class="d-grid mt-4">
             <button type="submit" class="btn btn-primary btn-lg rounded-pill">Lanjut ke Langkah 2</button>
         </div>
-    </form>
+    </form>    
 </div>
 {% endblock %}

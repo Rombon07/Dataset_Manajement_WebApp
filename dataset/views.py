@@ -60,6 +60,15 @@ import base64
 from django.core.files.base import ContentFile
 
 
+#api
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+
+from .serializers import DatasetRequestSerializer
+
+
 @login_required
 def dashboard(request):
     datasets = Dataset.objects.all().order_by("-uploaded_at")
@@ -118,7 +127,12 @@ def upload_step1(request):
     if request.method == "POST":
         form = DatasetInfoForm(request.POST)
         if form.is_valid():
-            request.session["dataset_info"] = form.cleaned_data
+            # Simpan data bersih ke session
+            request.session["dataset_info"] = {
+                "name": form.cleaned_data["name"],
+                "description": form.cleaned_data["description"],
+                "status": form.cleaned_data["status"],
+            }
             return redirect("upload_step2")
     else:
         form = DatasetInfoForm()
@@ -386,136 +400,6 @@ def download_dataset(request, dataset_id):
     return FileResponse(dataset.data_file.open("rb"), as_attachment=True)
 
 
-# @login_required
-# def download_summary(request, dataset_id):
-#     dataset = get_object_or_404(Dataset, id=dataset_id)
-#     DownloadLog.objects.create(
-#         user=request.user, dataset=dataset, action="download_summary"
-#     )
-
-#     try:
-#         df = pd.read_csv(dataset.data_file.path, nrows=10)
-#         preview_html = df.to_html(
-#             classes=["table", "table-bordered", "table-sm"], index=False
-#         )
-
-#         numeric_cols = df.select_dtypes(include="number").columns.tolist()
-#         chart_base64, boxplot_base64 = None, None
-
-#         if numeric_cols:
-#             # Bar chart
-#             fig, ax = plt.subplots(figsize=(6, 4))
-#             df[numeric_cols[0]].plot(kind="bar", ax=ax, color="#4B0082")
-#             ax.set_title(f"Bar Chart - {numeric_cols[0]}")
-#             plt.tight_layout()
-#             buf = io.BytesIO()
-#             plt.savefig(buf, format="png")
-#             plt.close(fig)
-#             chart_base64 = (
-#                 f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}"
-#             )
-
-#             # Boxplot
-#             fig, ax = plt.subplots(figsize=(6, 4))
-#             df[numeric_cols].plot(kind="box", ax=ax)
-#             ax.set_title("Boxplot Data Numerik")
-#             plt.tight_layout()
-#             buf = io.BytesIO()
-#             plt.savefig(buf, format="png")
-#             plt.close(fig)
-#             boxplot_base64 = (
-#                 f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}"
-#             )
-#     except Exception as e:
-#         preview_html = f"<p class='text-danger'>Gagal memuat file: {str(e)}</p>"
-#         chart_base64 = boxplot_base64 = None
-
-#     logs = (
-#         DownloadLog.objects.filter(dataset=dataset)
-#         .select_related("user")
-#         .order_by("-timestamp")
-#     )
-#     html_string = render_to_string(
-#         "dataset/summary_pdf.html",
-#         {
-#             "dataset": dataset,
-#             "preview": preview_html,
-#             "chart_base64": chart_base64,
-#             "boxplot_base64": boxplot_base64,
-#             "logs": logs,
-#             "user": request.user,
-#         },
-#     )
-
-#     response = HttpResponse(content_type="application/pdf")
-#     response["Content-Disposition"] = (
-#         f'attachment; filename="{dataset.name}_summary.pdf"'
-#     )
-#     pisa_status = pisa.CreatePDF(src=html_string, dest=response)
-
-#     if pisa_status.err:
-#         return HttpResponse("Terjadi kesalahan saat membuat PDF", status=500)
-#     return response
-
-
-# def print_dataset(request, pk):
-#     dataset = get_object_or_404(Dataset, pk=pk)
-
-#     # Load file CSV atau XLSX
-#     file_path = dataset.data_file.path
-#     if file_path.endswith(".csv"):
-#         df = pd.read_csv(file_path)
-#     elif file_path.endswith(".xlsx"):
-#         df = pd.read_excel(file_path)
-#     else:
-#         df = pd.DataFrame()
-
-#     # Preview tabel (gunakan DataFrame to_html)
-#     preview_html = df.head(10).to_html(classes="table table-bordered", index=False)
-
-#     # Bar Chart
-#     chart_base64 = None
-#     if not df.empty and df.select_dtypes(include="number").shape[1] > 0:
-#         fig, ax = plt.subplots(figsize=(6, 4))
-#         df.select_dtypes(include="number").head(10).plot(kind="bar", ax=ax)
-#         plt.tight_layout()
-#         buf = BytesIO()
-#         plt.savefig(buf, format="png")
-#         buf.seek(0)
-#         image_base64 = base64.b64encode(buf.read()).decode("utf-8")
-#         chart_base64 = "data:image/png;base64," + image_base64
-#         plt.close()
-
-#     # Boxplot
-#     boxplot_base64 = None
-#     if not df.empty and df.select_dtypes(include="number").shape[1] > 0:
-#         fig2, ax2 = plt.subplots(figsize=(6, 4))
-#         df.select_dtypes(include="number").plot(kind="box", ax=ax2)
-#         plt.tight_layout()
-#         buf2 = BytesIO()
-#         plt.savefig(buf2, format="png")
-#         buf2.seek(0)
-#         image2_base64 = base64.b64encode(buf2.read()).decode("utf-8")
-#         boxplot_base64 = "data:image/png;base64," + image2_base64
-#         plt.close()
-
-#     # Log interaksi pengguna (jika ada)
-#     logs = DownloadLog.objects.filter(dataset=dataset).order_by("-timestamp")
-
-#     return render(
-#         request,
-#         "dataset/print_dataset.html",
-#         {
-#             "dataset": dataset,
-#             "preview": preview_html,
-#             "chart_base64": chart_base64,
-#             "boxplot_base64": boxplot_base64,
-#             "logs": logs,
-#         },
-#     )
-
-
-
 @login_required
 def dataset_report(request, pk, as_pdf=False):
     dataset = get_object_or_404(Dataset, pk=pk)
@@ -589,18 +473,268 @@ def log_print_action(request, dataset_id):
     return JsonResponse({"status": "ok"})
 
 
-@login_required
-def api_dataset(request, dataset_id):
-    dataset = get_object_or_404(Dataset, id=dataset_id)
-    DownloadLog.objects.create(user=request.user, dataset=dataset, action="api")
-    return JsonResponse(
-        {
-            "name": dataset.name,
-            "description": dataset.description,
-            "download_url": dataset.data_file.url,
-        }
-    )
+from .models import Dataset, DatasetRequest
+
+
+def request_list(request):
+    datasets = DatasetRequest.objects.select_related('dataset').all().order_by('-timestamp')
+    return render(request, 'dataset/request_list.html', {'datasets': datasets})
+
 
 
 def test_404(request):
     return render(request, "404.html", status=404)
+
+
+def pilih_dataset_untuk_request(request, request_id):
+    req = get_object_or_404(DatasetRequest, id=request_id)
+    datasets = Dataset.objects.filter(owner=request.user)
+
+    return render(request, 'dataset/pilih_dataset.html', {
+        'request_obj': req,
+        'datasets': datasets
+    })
+
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+
+@login_required
+def konfirmasi_pilih_dataset(request, request_id, dataset_id):
+    dataset_request = get_object_or_404(DatasetRequest, id=request_id)
+    dataset = get_object_or_404(Dataset, id=dataset_id, owner=request.user)
+
+    # Kaitkan dataset ke permintaan
+    dataset_request.dataset = dataset
+    dataset_request.save()
+
+    messages.success(request, "Dataset berhasil dikaitkan dengan permintaan.")
+    return redirect("request_list")  # Pastikan ini adalah nama URL yang benar
+
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import DatasetRequestSerializer
+
+@api_view(['POST'])
+def receive_dataset_request(request):
+    serializer = DatasetRequestSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+# dataset/views.py
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+from .models import Dataset, DatasetRequest
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+
+@csrf_exempt
+@login_required
+def api_kirim_dataset_ke_teman(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+
+            dataset_id = data.get("dataset_id")
+            request_id = data.get("request_id")
+
+            if not dataset_id or not request_id:
+                return JsonResponse({"success": False, "message": "Dataset ID dan Request ID wajib diisi."}, status=400)
+
+            # Validasi dataset
+            try:
+                dataset = Dataset.objects.get(id=dataset_id, owner=request.user)
+            except Dataset.DoesNotExist:
+                return JsonResponse({"success": False, "message": "Dataset tidak ditemukan atau bukan milik Anda."}, status=403)
+
+            # Validasi request
+            try:
+                request_obj = DatasetRequest.objects.get(id=request_id)
+            except DatasetRequest.DoesNotExist:
+                return JsonResponse({"success": False, "message": "Permintaan dataset tidak ditemukan."}, status=404)
+
+            # Update permintaan agar terkait ke dataset yang dipilih
+            request_obj.dataset = dataset
+            request_obj.save()
+
+            return JsonResponse({"success": True, "message": "Dataset berhasil dikirim ke teman."})
+
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "message": "Format data tidak valid."}, status=400)
+    
+    return JsonResponse({"success": False, "message": "Hanya menerima metode POST."}, status=405)
+
+
+import requests
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import Dataset, DatasetRequest
+from .models import DatasetSent
+
+
+
+# @login_required
+# def api_kirim_dataset_ke_teman_url(request, dataset_id, request_id):
+#     if request.method == "GET":
+#         try:
+#             # Validasi dataset milik user
+#             dataset = Dataset.objects.get(id=dataset_id, owner=request.user)
+#         except Dataset.DoesNotExist:
+#             return JsonResponse({"success": False, "message": "Dataset tidak ditemukan atau bukan milik Anda."}, status=403)
+
+#         try:
+#             # Validasi request
+#             dataset_request = DatasetRequest.objects.get(id=request_id)
+#         except DatasetRequest.DoesNotExist:
+#             return JsonResponse({"success": False, "message": "Permintaan tidak ditemukan."}, status=404)
+
+#         # Update permintaan agar terkait ke dataset
+#         dataset_request.dataset = dataset
+#         dataset_request.save()
+
+#         # Payload JSON yang akan dikirim ke teman
+#         payload = {
+#             "dataset_id": dataset.id,
+#             "request_id": dataset_request.id,
+#             "name": dataset.name,
+#             "description": dataset.description,
+#             "status": dataset.status,
+#             "data_file_url": request.build_absolute_uri(dataset.data_file.url),
+#             "nama_model": dataset_request.nama_model,
+#             "kebutuhan": dataset_request.kebutuhan,
+#         }
+
+#         try:
+#             # Kirim ke endpoint teman via jaringan VLAN
+#             response = requests.post(
+#                 "http://10.24.64.10:8000/api/terima-dataset/",
+#                 json=payload,
+#                 timeout=5
+#             )
+
+#             if response.status_code == 200:
+#                 # Simpan ke DatasetSent hanya jika berhasil
+#                 DatasetSent.objects.create(
+#                     sender=request.user,
+#                     dataset_id=dataset.id,
+#                     request_id=dataset_request.id,
+#                     name=dataset.name,
+#                     description=dataset.description,
+#                     status=dataset.status,
+#                     file_url=payload["data_file_url"],
+#                     nama_model=dataset_request.nama_model,
+#                     kebutuhan=dataset_request.kebutuhan,
+#                 )
+
+#                 return JsonResponse({"success": True, "message": "Dataset berhasil dikirim ke teman."})
+
+#             return JsonResponse({"success": False, "message": f"Gagal kirim ke teman: {response.status_code}"})
+
+#         except requests.exceptions.RequestException as e:
+#             return JsonResponse({"success": False, "message": f"Gagal terhubung ke teman: {e}"})
+
+#     return JsonResponse({"success": False, "message": "Metode tidak diperbolehkan."}, status=405)
+
+import requests
+@csrf_exempt
+@login_required
+def api_kirim_dataset_ke_teman_file(request, dataset_id, request_id):
+    if request.method == "POST":
+        try:
+            dataset = Dataset.objects.get(id=dataset_id, owner=request.user)
+        except Dataset.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Dataset tidak ditemukan atau bukan milik Anda."}, status=403)
+
+        try:
+            dataset_request = DatasetRequest.objects.get(id=request_id)
+        except DatasetRequest.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Permintaan tidak ditemukan."}, status=404)
+
+        dataset_request.dataset = dataset
+        dataset_request.save()
+
+        # Buka file CSV yang akan dikirim
+        file_path = dataset.data_file.path
+        with open(file_path, 'rb') as f:
+            files = {
+                'file': (dataset.data_file.name, f, 'text/csv'),
+            }
+            data = {
+                'dataset_id': dataset.id,
+                'request_id': dataset_request.id,
+                'name': dataset.name,
+                'description': dataset.description,
+                'status': dataset.status,
+                'nama_model': dataset_request.nama_model,
+                'kebutuhan': dataset_request.kebutuhan,
+            }
+
+            try:
+                response = requests.post(
+                    "http://10.24.64.10:8000/api/terima-dataset/",
+                    files=files,
+                    data=data,
+                    timeout=10
+                )
+
+                if response.status_code == 200:
+                    return JsonResponse({"success": True, "message": "Dataset berhasil dikirim (dengan file)."})
+                else:
+                    return JsonResponse({"success": False, "message": f"Gagal kirim ke teman: {response.status_code}"})
+            except requests.exceptions.RequestException as e:
+                return JsonResponse({"success": False, "message": f"Gagal terhubung ke teman: {e}"})
+
+    return JsonResponse({"success": False, "message": "Metode tidak diperbolehkan."}, status=405)
+
+
+
+from django.http import JsonResponse
+from .models import DatasetRequest
+
+def api_request_list(request):
+    dataset_requests = DatasetRequest.objects.all().select_related("dataset")
+
+    result = []
+    for req in dataset_requests:
+        item = {
+            "id": req.id,
+            "nama_model": req.nama_model,
+            "kebutuhan": req.kebutuhan,
+            "deskripsi": req.deskripsi,
+            "timestamp": req.timestamp.strftime("%Y-%m-%d %H:%M"),
+            "dataset": None
+        }
+
+        if req.dataset:
+            item["dataset"] = {
+                "id": req.dataset.id,
+                "name": req.dataset.name,
+                "description": req.dataset.description,
+                "status": req.dataset.status,
+                "data_file": request.build_absolute_uri(req.dataset.data_file.url) if req.dataset.data_file else None
+            }
+
+        result.append(item)
+
+    return JsonResponse({"success": True, "data": result})
+
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+@api_view(['GET'])
+def list_dataset_sent(request):
+    from .models import DatasetSent
+    from .serializers import DatasetSentSerializer
+
+    data = DatasetSent.objects.all().order_by('-timestamp')
+    serializer = DatasetSentSerializer(data, many=True)
+    return Response({"success": True, "data": serializer.data})

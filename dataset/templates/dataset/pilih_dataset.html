@@ -1,0 +1,37 @@
+{% extends 'dataset/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3 class="mb-4">Pilih Dataset untuk Permintaan: {{ request_obj.nama_model }}</h3>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nama Dataset</th>
+                    <th>Deskripsi</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in datasets %}
+                <tr>
+                    <td>{{ data.name }}</td>
+                    <td>{{ data.description }}</td>
+                    <td>{{ data.status }}</td>
+                    <td>
+                        <a href="{% url 'konfirmasi_pilih_dataset' request_id=request_obj.id dataset_id=data.id %}"
+                            class="btn btn-success btn-sm"
+                            onclick="return confirm('Yakin pilih dataset ini?')">
+                            ✅ Pilih
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center">Tidak ada dataset milik Anda.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
