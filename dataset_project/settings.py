@@ -29,6 +29,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "*"]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://8fffb8d3-ef77-4e0f-bf17-95cee2ee7bee-00-ws9ayhnpx9qk.sisko.replit.dev",
+]
+
 
 # Application definition
 
