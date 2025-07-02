@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Dataset Summary</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+        h1, h2, h4 { text-align: center; color: #4B0082; }
+        .section { margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 11px; }
+        img.chart {
+            display: block;
+            margin: 10px auto;
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ringkasan Dataset</h1>
+
+    <div class="section">
+        <p><strong>Nama:</strong> {{ dataset.name }}</p>
+        <p><strong>Deskripsi:</strong> {{ dataset.description }}</p>
+        <p><strong>Status:</strong> {{ dataset.status }}</p>
+        <p><strong>Tanggal Unggah:</strong> {{ dataset.uploaded_at }}</p>
+    </div>
+
+    {% if preview_data %}
+    <div class="section">
+        <h4>Preview Data</h4>
+        <table>
+            <thead>
+                <tr>
+                    {% for col in preview_data.columns %}
+                        <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in preview_data.values %}
+                    <tr>
+                        {% for cell in row %}
+                            <td>{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if chart_base64 %}
+    <div class="section">
+        <h4>Visualisasi Data (Bar Chart)</h4>
+        <img src="{{ chart_base64 }}" alt="Grafik Bar Chart" class="chart" />
+    </div>
+    {% endif %}
+
+    {% if boxplot_base64 %}
+    <div class="section">
+        <h4>Visualisasi Data (Boxplot)</h4>
+        <img src="{{ boxplot_base64 }}" class="chart" />
+    </div>
+    {% endif %}
+</body>
+</html>

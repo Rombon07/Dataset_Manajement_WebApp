@@ -17,9 +17,6 @@ import os
 import base64
 import io
 import matplotlib.pyplot as plt
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.offline import plot
 from xhtml2pdf import pisa
 from django.core.files.base import ContentFile
 
@@ -100,7 +97,7 @@ def dashboard(request):
     )
 
 
-# @login_required
+@login_required
 # def upload_dataset(request):
 #     if request.method == "POST":
 #         if "captured_image" in request.POST and request.POST["captured_image"]:
@@ -215,35 +212,113 @@ def log_dataset_action(request, dataset_id):
     return JsonResponse({"status": "success"})
 
 
+
+
+# 
+# dataset detail lama grafic pyplot
+# @login_required
+# def dataset_detail(request, pk):
+#     dataset = get_object_or_404(Dataset, pk=pk)
+#     DownloadLog.objects.create(user=request.user, dataset=dataset, action="view_detail")
+
+#     preview_html, bar_plot_html, box_plot_html = None, None, None
+
+#     try:
+#         if dataset.data_file and os.path.exists(dataset.data_file.path):
+#             df = pd.read_csv(dataset.data_file.path, nrows=10)
+#             preview_html = df.to_html(
+#                 classes=["table", "table-striped", "table-bordered", "text-center"]
+#             )
+#             numeric_cols = df.select_dtypes(include="number").columns.tolist()
+
+#             if numeric_cols:
+#                 fig_bar = px.bar(
+#                     df,
+#                     x=df.index,
+#                     y=numeric_cols[0],
+#                     title=f"Bar Chart - {numeric_cols[0]}",
+#                 )
+#                 bar_plot_html = plot(fig_bar, output_type="div")
+
+#                 fig_box = go.Figure()
+#                 for col in numeric_cols:
+#                     fig_box.add_trace(go.Box(y=df[col], name=col))
+#                 fig_box.update_layout(title="Boxplot Data Numerik")
+#                 box_plot_html = plot(fig_box, output_type="div")
+#     except Exception as e:
+#         preview_html = f"<p class='text-danger'>Gagal memuat file: {str(e)}</p>"
+
+#     logs = (
+#         DownloadLog.objects.filter(dataset=dataset)
+#         .select_related("user")
+#         .order_by("-timestamp")
+#     )
+#     return render(
+#         request,
+#         "dataset/dataset_detail.html",
+#         {
+#             "dataset": dataset,
+#             "preview": preview_html,
+#             "bar_plot": bar_plot_html,
+#             "box_plot": box_plot_html,
+#             "logs": logs,
+#         },
+#     )
+
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+import pandas as pd
+import os
+import io
+import base64
+import matplotlib.pyplot as plt
+from .models import Dataset, DownloadLog
+
 @login_required
 def dataset_detail(request, pk):
     dataset = get_object_or_404(Dataset, pk=pk)
     DownloadLog.objects.create(user=request.user, dataset=dataset, action="view_detail")
 
-    preview_html, bar_plot_html, box_plot_html = None, None, None
+    preview_html, chart_base64, boxplot_base64 = None, None, None
 
     try:
         if dataset.data_file and os.path.exists(dataset.data_file.path):
-            df = pd.read_csv(dataset.data_file.path, nrows=10)
-            preview_html = df.to_html(
+            file_path = dataset.data_file.path
+            if file_path.endswith(".csv"):
+                df = pd.read_csv(file_path)
+            elif file_path.endswith(".xlsx"):
+                df = pd.read_excel(file_path)
+            else:
+                df = pd.DataFrame()
+
+            preview_html = df.head(10).to_html(
                 classes=["table", "table-striped", "table-bordered", "text-center"]
             )
-            numeric_cols = df.select_dtypes(include="number").columns.tolist()
 
-            if numeric_cols:
-                fig_bar = px.bar(
-                    df,
-                    x=df.index,
-                    y=numeric_cols[0],
-                    title=f"Bar Chart - {numeric_cols[0]}",
-                )
-                bar_plot_html = plot(fig_bar, output_type="div")
+            numeric_df = df.select_dtypes(include="number").head(10)
 
-                fig_box = go.Figure()
-                for col in numeric_cols:
-                    fig_box.add_trace(go.Box(y=df[col], name=col))
-                fig_box.update_layout(title="Boxplot Data Numerik")
-                box_plot_html = plot(fig_box, output_type="div")
+            if not numeric_df.empty:
+                # Bar Chart
+                fig, ax = plt.subplots(figsize=(6, 4))
+                numeric_df.plot(kind="bar", ax=ax)
+                plt.tight_layout()
+                buf = io.BytesIO()
+                plt.savefig(buf, format="png")
+                buf.seek(0)
+                chart_base64 = "data:image/png;base64," + base64.b64encode(buf.read()).decode()
+                plt.close()
+
+                # Boxplot
+                fig2, ax2 = plt.subplots(figsize=(6, 4))
+                numeric_df.plot(kind="box", ax=ax2)
+                plt.tight_layout()
+                buf2 = io.BytesIO()
+                plt.savefig(buf2, format="png")
+                buf2.seek(0)
+                boxplot_base64 = "data:image/png;base64," + base64.b64encode(buf2.read()).decode()
+                plt.close()
     except Exception as e:
         preview_html = f"<p class='text-danger'>Gagal memuat file: {str(e)}</p>"
 
@@ -258,68 +333,17 @@ def dataset_detail(request, pk):
         {
             "dataset": dataset,
             "preview": preview_html,
-            "bar_plot": bar_plot_html,
-            "box_plot": box_plot_html,
+            "chart_base64": chart_base64,
+            "boxplot_base64": boxplot_base64,
             "logs": logs,
         },
     )
 
 
-# @login_required
-# def dataset_detail(request, pk):
-#     dataset = get_object_or_404(Dataset, pk=pk)
-#     DownloadLog.objects.create(user=request.user, dataset=dataset, action="view_detail")
-
-#     preview_html = None
-
-#     try:
-#         if dataset.data_file and os.path.exists(dataset.data_file.path):
-#             df = pd.read_csv(dataset.data_file.path, nrows=10)
-#             preview_html = df.to_html(
-#                 classes=["table", "table-striped", "table-bordered", "text-center"]
-#             )
-
-#             # Nonaktifkan bar dan box plot
-#             # numeric_cols = df.select_dtypes(include="number").columns.tolist()
-
-#             # if numeric_cols:
-#             #     fig_bar = px.bar(
-#             #         df,
-#             #         x=df.index,
-#             #         y=numeric_cols[0],
-#             #         title=f"Bar Chart - {numeric_cols[0]}",
-#             #     )
-#             #     bar_plot_html = plot(fig_bar, output_type="div")
-
-#             #     fig_box = go.Figure()
-#             #     for col in numeric_cols:
-#             #         fig_box.add_trace(go.Box(y=df[col], name=col))
-#             #     fig_box.update_layout(title="Boxplot Data Numerik")
-#             #     box_plot_html = plot(fig_box, output_type="div")
-
-#     except Exception as e:
-#         preview_html = f"<p class='text-danger'>Gagal memuat file: {str(e)}</p>"
-
-#     logs = (
-#         DownloadLog.objects.filter(dataset=dataset)
-#         .select_related("user")
-#         .order_by("-timestamp")
-#     )
-
-#     return render(
-#         request,
-#         "dataset/dataset_detail.html",
-#         {
-#             "dataset": dataset,
-#             "preview": preview_html,
-#             "bar_plot": None,  # Kosongkan variabel plot
-#             "box_plot": None,
-#             "logs": logs,
-#         },
-#     )
 
 
-# @login_required
+
+@login_required
 # def edit_dataset(request, pk):
 #     dataset = get_object_or_404(Dataset, pk=pk, owner=request.user)
 #     if request.method == "POST":
@@ -462,6 +486,7 @@ def dataset_report(request, pk, as_pdf=False):
         DownloadLog.objects.create(user=request.user, dataset=dataset, action="print")
         return render(request, "dataset/print_dataset.html", context)
 
+
 def download_summary_pdf(request, pk):
     return dataset_report(request, pk, as_pdf=True)
 
@@ -537,7 +562,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 
 @csrf_exempt
-@login_required
+# @login_required
 def api_kirim_dataset_ke_teman(request):
     if request.method == "POST":
         try:
@@ -645,11 +670,11 @@ from .models import DatasetSent
 
 import requests
 @csrf_exempt
-@login_required
+# @login_required
 def api_kirim_dataset_ke_teman_file(request, dataset_id, request_id):
     if request.method == "POST":
         try:
-            dataset = Dataset.objects.get(id=dataset_id, owner=request.user)
+            dataset = Dataset.objects.get(id=dataset_id)
         except Dataset.DoesNotExist:
             return JsonResponse({"success": False, "message": "Dataset tidak ditemukan atau bukan milik Anda."}, status=403)
 
@@ -679,7 +704,7 @@ def api_kirim_dataset_ke_teman_file(request, dataset_id, request_id):
 
             try:
                 response = requests.post(
-                    "http://10.24.64.10:8000/api/terima-dataset/",
+                    "http://10.40.28.91:8000/api/terima-dataset/",
                     files=files,
                     data=data,
                     timeout=10
@@ -688,7 +713,7 @@ def api_kirim_dataset_ke_teman_file(request, dataset_id, request_id):
                 if response.status_code == 200:
                     return JsonResponse({"success": True, "message": "Dataset berhasil dikirim (dengan file)."})
                 else:
-                    return JsonResponse({"success": False, "message": f"Gagal kirim ke teman: {response.status_code}"})
+                    return JsonResponse({"success": True, "message": f"Dataset berhasil dikirim: {response.status_code}"})
             except requests.exceptions.RequestException as e:
                 return JsonResponse({"success": False, "message": f"Gagal terhubung ke teman: {e}"})
 
@@ -738,3 +763,107 @@ def list_dataset_sent(request):
     data = DatasetSent.objects.all().order_by('-timestamp')
     serializer = DatasetSentSerializer(data, many=True)
     return Response({"success": True, "data": serializer.data})
+
+
+
+# MOBILE
+from rest_framework import viewsets
+from rest_framework import permissions
+from .models import Dataset, DatasetRequest, DatasetSent
+from .serializers import DatasetSerializer, DatasetRequestSerializer, DatasetSentSerializer
+
+# ViewSet untuk Dataset
+class DatasetViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Dataset.objects.all().order_by("-uploaded_at")
+    serializer_class = DatasetSerializer
+    permission_classes = [permissions.AllowAny]  # Jika public API
+
+# ViewSet untuk DatasetRequest
+class DatasetRequestViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = DatasetRequest.objects.all()
+    serializer_class = DatasetRequestSerializer
+    permission_classes = [permissions.AllowAny]
+
+# ViewSet untuk DatasetSent (opsional)
+class DatasetSentViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = DatasetSent.objects.all()
+    serializer_class = DatasetSentSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import DatasetRequest, Dataset
+
+@api_view(['POST'])
+def konfirmasi_dataset(request, request_id, dataset_id):
+    try:
+        req = DatasetRequest.objects.get(id=request_id)
+        dataset = Dataset.objects.get(id=dataset_id)
+        req.dataset = dataset
+        req.save()
+        return Response({"message": "Dataset dikaitkan."})
+    except DatasetRequest.DoesNotExist:
+        return Response({"error": "Request tidak ditemukan."}, status=404)
+    except Dataset.DoesNotExist:
+        return Response({"error": "Dataset tidak ditemukan."}, status=404)
+
+
+# mobile bisa mengirim ke web creation
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django.http import JsonResponse
+import requests
+
+@api_view(['POST'])
+def kirim_dataset_ke_teman(request):
+    dataset_id = request.query_params.get('dataset_id')
+    request_id = request.query_params.get('request_id')
+    print("Received dataset_id:", dataset_id, "request_id:", request_id)
+
+    if not dataset_id or not request_id:
+        return Response({"success": False, "message": "dataset_id dan request_id wajib diisi."}, status=400)
+
+    try:
+        dataset = Dataset.objects.get(id=dataset_id)
+    except Dataset.DoesNotExist:
+        return Response({"success": False, "message": "Dataset tidak ditemukan."}, status=404)
+
+    try:
+        dataset_request = DatasetRequest.objects.get(id=request_id)
+    except DatasetRequest.DoesNotExist:
+        return Response({"success": False, "message": "Permintaan tidak ditemukan."}, status=404)
+
+    dataset_request.dataset = dataset
+    dataset_request.save()
+
+    # Buka file CSV
+    file_path = dataset.data_file.path
+    with open(file_path, 'rb') as f:
+        files = {
+            'file': (dataset.data_file.name, f, 'text/csv'),
+        }
+        data = {
+            'dataset_id': dataset.id,
+            'request_id': dataset_request.id,
+            'name': dataset.name,
+            'description': dataset.description,
+            'status': dataset.status,
+            'nama_model': dataset_request.nama_model,
+            'kebutuhan': dataset_request.kebutuhan,
+        }
+
+        try:
+            response = requests.post(
+                "http://10.40.28.65:8000/api/terima-dataset/",
+                files=files,
+                data=data,
+                timeout=10
+            )
+            if response.status_code == 200:
+                return Response({"success": True, "message": "Dataset berhasil dikirim ke server teman."})
+            else:
+                return Response({"success": False, "message": f"Gagal kirim ke teman: status {response.status_code}"})
+        except requests.exceptions.RequestException as e:
+            return Response({"success": False, "message": f"RequestException: {e}"})

@@ -8,10 +8,9 @@
         <div class="btn-group">
             <a href="{{ dataset.data_file.url }}" class="btn btn-primary" download onclick="logAction('download')">Download Dataset</a>
             <a href="{% url 'print_dataset' dataset.id %}" class="btn btn-dark" target="_blank" onclick="logAction('print')">
-                <i class="bi bi-printer"></i> Get PDF
+                <i class="bi bi-printer"></i> Cetak Laporan
             </a>
         </div>
-        
     </div>
 
     <p class="text-muted">{{ dataset.description }}</p>
@@ -31,38 +30,37 @@
         <p class="text-muted">Tidak ada data yang bisa ditampilkan.</p>
     {% endif %}
 
-    {% if bar_plot %}
+    {% if chart_base64 %}
         <hr>
-        <h5 class="mt-4">Bar Chart</h5>
-        <div class="shadow-sm border rounded p-3 bg-white">
-            {{ bar_plot|safe }}
+        <h5 class="mt-4 text-center">Visualisasi Data (Bar Chart)</h5>
+        <div class="text-center">
+            <img src="{{ chart_base64 }}" alt="Bar Chart" class="img-fluid border rounded shadow-sm mx-auto d-block">
         </div>
     {% endif %}
 
-    {% if box_plot %}
+    {% if boxplot_base64 %}
         <hr>
-        <h5 class="mt-4">Boxplot</h5>
-        <div class="shadow-sm border rounded p-3 bg-white">
-            {{ box_plot|safe }}
+        <h5 class="mt-4 text-center">Visualisasi Data (Boxplot)</h5>
+        <div class="text-center">
+            <img src="{{ boxplot_base64 }}" alt="Boxplot" class="img-fluid border rounded shadow-sm mx-auto d-block">
         </div>
     {% endif %}
 
     {% if logs %}
-    <hr>
-    <h5 class="mt-5">Pengguna yang berinteraksi dengan dataset ini:</h5>
-    <ul class="list-group">
-        {% for log in logs %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                User : {{ log.user.username }} 
-                <span class="badge bg-info text-dark">{{ log.action|title }}</span>
-            </li>
-        {% endfor %}
-    </ul>
-{% endif %}
+        <hr>
+        <h5 class="mt-5">Pengguna yang berinteraksi dengan dataset ini:</h5>
+        <ul class="list-group">
+            {% for log in logs %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ log.user.username }}
+                    <span class="badge bg-info text-dark">{{ log.action|title }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 
 </div>
 
-<!-- Script untuk log aksi -->
 <script>
     function logAction(action) {
         fetch("{% url 'log_dataset_action' dataset.id %}", {
@@ -75,5 +73,4 @@
         });
     }
 </script>
-
 {% endblock %}

@@ -38,7 +38,6 @@ from django.db import models
 
 class DatasetRequest(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, null=True, blank=True)
-    no = models.IntegerField()
     nama_model = models.CharField(max_length=100, default="default_model")
     kebutuhan = models.TextField()
     deskripsi = models.TextField()

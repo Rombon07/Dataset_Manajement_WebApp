@@ -20,7 +20,7 @@
                     <td>{{ data.description }}</td>
                     <td>{{ data.status }}</td>
                     <td>
-                        <a href="{% url 'konfirmasi_pilih_dataset' request_id=request_obj.id dataset_id=data.id %}"
+                        <a href="{% url 'konfirmasi_pilih_dataset' request_obj.id data.id %}"
                             class="btn btn-success btn-sm"
                             onclick="return confirm('Yakin pilih dataset ini?')">
                             ✅ Pilih
