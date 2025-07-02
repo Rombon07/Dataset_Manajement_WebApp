@@ -17,6 +17,9 @@ import os
 import base64
 import io
 import matplotlib.pyplot as plt
+# import plotly.express as px
+# import plotly.graph_objects as go
+# from plotly.offline import plot
 from xhtml2pdf import pisa
 from django.core.files.base import ContentFile
 
