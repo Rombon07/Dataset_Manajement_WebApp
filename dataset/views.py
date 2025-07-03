@@ -290,58 +290,52 @@ def dataset_detail(request, pk):
         if dataset.data_file and os.path.exists(dataset.data_file.path):
             file_path = dataset.data_file.path
             if file_path.endswith(".csv"):
-                df = pd.read_csv(file_path)
+                df_preview = pd.read_csv(file_path, nrows=10)
+                df_chart = pd.read_csv(file_path, nrows=100)
             elif file_path.endswith(".xlsx"):
-                df = pd.read_excel(file_path)
+                df_preview = pd.read_excel(file_path, nrows=10)
+                df_chart = pd.read_excel(file_path, nrows=100)
             else:
-                df = pd.DataFrame()
+                df_preview = df_chart = pd.DataFrame()
 
-            preview_html = df.head(10).to_html(
+            preview_html = df_preview.to_html(
                 classes=["table", "table-striped", "table-bordered", "text-center"]
             )
 
-            numeric_df = df.select_dtypes(include="number").head(10)
+            numeric_df = df_chart.select_dtypes(include="number")
 
             if not numeric_df.empty:
-                # Bar Chart
-                fig, ax = plt.subplots(figsize=(6, 4))
+                # Bar chart
+                fig, ax = plt.subplots(figsize=(6,4))
                 numeric_df.plot(kind="bar", ax=ax)
                 plt.tight_layout()
                 buf = io.BytesIO()
-                plt.savefig(buf, format="png")
+                plt.savefig(buf, format="png", dpi=72)
                 buf.seek(0)
                 chart_base64 = "data:image/png;base64," + base64.b64encode(buf.read()).decode()
-                plt.close()
+                plt.close(fig)
 
                 # Boxplot
-                fig2, ax2 = plt.subplots(figsize=(6, 4))
+                fig2, ax2 = plt.subplots(figsize=(6,4))
                 numeric_df.plot(kind="box", ax=ax2)
                 plt.tight_layout()
                 buf2 = io.BytesIO()
-                plt.savefig(buf2, format="png")
+                plt.savefig(buf2, format="png", dpi=72)
                 buf2.seek(0)
                 boxplot_base64 = "data:image/png;base64," + base64.b64encode(buf2.read()).decode()
-                plt.close()
+                plt.close(fig2)
     except Exception as e:
         preview_html = f"<p class='text-danger'>Gagal memuat file: {str(e)}</p>"
 
-    logs = (
-        DownloadLog.objects.filter(dataset=dataset)
-        .select_related("user")
-        .order_by("-timestamp")
-    )
-    return render(
-        request,
-        "dataset/dataset_detail.html",
-        {
-            "dataset": dataset,
-            "preview": preview_html,
-            "chart_base64": chart_base64,
-            "boxplot_base64": boxplot_base64,
-            "logs": logs,
-        },
-    )
+    logs = DownloadLog.objects.filter(dataset=dataset).order_by("-timestamp")
 
+    return render(request, "dataset/dataset_detail.html", {
+        "dataset": dataset,
+        "preview": preview_html,
+        "chart_base64": chart_base64,
+        "boxplot_base64": boxplot_base64,
+        "logs": logs
+    })
 
 
 
